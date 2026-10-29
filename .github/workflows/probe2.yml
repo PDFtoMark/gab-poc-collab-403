@@ -1,0 +1,34 @@
+name: probe2
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Raw curl with GITHUB_TOKEN
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for u in octocat Ety60; do
+            echo "=== $u"
+            curl -s -i -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/collaborators/$u" | sed -n '1p;/^{/p'
+          done
+          echo "=== rate"; curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/rate_limit | head -c 300
+      - name: github-script checkCollaborator exact target logic
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            for (const username of ['octocat','Ety60']) {
+              try {
+                const result = await github.rest.repos.checkCollaborator({owner: context.repo.owner, repo: context.repo.repo, username});
+                console.log(`${username}: STATUS ${result.status}`);
+              } catch (e) {
+                console.log(`${username}: THREW status=${e.status} name=${e.name} msg=${e.message}`);
+              }
+            }
