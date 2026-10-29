@@ -1,0 +1,68 @@
+name: gate-validate
+on:
+  workflow_dispatch:
+
+jobs:
+  gate-outsider:
+    runs-on: ubuntu-latest
+    outputs:
+      allowed: ${{ steps.gate.outputs.allowed }}
+    steps:
+      - name: Gate check (exact target snippet, outsider login)
+        id: gate
+        run: |
+          set -euo pipefail
+          PERM=$(gh api repos/$GITHUB_REPOSITORY/collaborators/$COMMENT_USER_LOGIN/permission --jq '.permission' 2>/dev/null || echo "none")
+          echo "PERM=[$PERM]"
+          if [ "$PERM" = "admin" ] || [ "$PERM" = "maintain" ]; then
+            echo "allowed=true" >> $GITHUB_OUTPUT
+          else
+            echo "allowed=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_USER_LOGIN: torvalds
+
+  gate-admin:
+    runs-on: ubuntu-latest
+    outputs:
+      allowed: ${{ steps.gate.outputs.allowed }}
+    steps:
+      - name: Gate check (exact target snippet, owner login)
+        id: gate
+        run: |
+          set -euo pipefail
+          PERM=$(gh api repos/$GITHUB_REPOSITORY/collaborators/$COMMENT_USER_LOGIN/permission --jq '.permission' 2>/dev/null || echo "none")
+          echo "PERM=[$PERM]"
+          if [ "$PERM" = "admin" ] || [ "$PERM" = "maintain" ]; then
+            echo "allowed=true" >> $GITHUB_OUTPUT
+          else
+            echo "allowed=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_USER_LOGIN: Ety60
+
+  privileged-after-outsider:
+    needs: gate-outsider
+    if: needs.gate-outsider.outputs.allowed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "PRIVILEGED_STEP_RAN (unexpected)"
+
+  assert:
+    needs: [gate-outsider, gate-admin]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          OUT: ${{ needs.gate-outsider.outputs.allowed }}
+          ADM: ${{ needs.gate-admin.outputs.allowed }}
+        run: |
+          echo "outsider_allowed=[$OUT] admin_allowed=[$ADM]"
+          test "$OUT" = "false"
+          test "$ADM" = "true"
+          echo "ASSERT_OK"
+      - name: loose equality semantics null-vs-false
+        run: |
+          echo "null==false -> ${{ null == false }}"
+          echo "''==true -> ${{ '' == true }}"
