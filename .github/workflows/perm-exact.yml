@@ -1,0 +1,26 @@
+name: perm-exact
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - name: exact has_push semantics with read-only token
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          has_push() {
+            gh api "repos/$REPO/collaborators/$1/permission" \
+              --jq '.user.permissions.push' 2>/dev/null || echo false
+          }
+          for u in Ety60 torvalds lazyhacker6 zzz-no-such-user-zzz9; do
+            v=$(has_push "$u")
+            echo "RESULT user=[$u] has_push=[$v]"
+          done
+          echo "raw render:"
+          gh api "repos/$REPO/collaborators/torvalds/permission" --jq '.user.permissions.push'
