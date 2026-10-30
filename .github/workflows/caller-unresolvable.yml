@@ -1,0 +1,11 @@
+name: caller-unresolvable
+on:
+  workflow_dispatch:
+    inputs:
+      dummy:
+        required: false
+jobs:
+  call:
+    uses: PDFtoMark/gab-poc-private-callee/.github/workflows/callee.yml@main
+    secrets:
+      SOME_SECRET: ${{ secrets.SOME_SECRET }}
