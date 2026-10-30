@@ -1,0 +1,10 @@
+name: caller-gated-owner
+on:
+  workflow_dispatch:
+    inputs:
+      dummy:
+        required: false
+jobs:
+  call:
+    if: github.repository_owner == 'SomeOtherOrg'
+    uses: PDFtoMark/gab-poc-private-callee/.github/workflows/callee.yml@main
