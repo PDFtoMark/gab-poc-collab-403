@@ -1,0 +1,22 @@
+name: perm-probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: permission endpoint for outsider vs owner
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for u in octocat torvalds Ety60; do
+            echo "=== $u"
+            curl -s -o /tmp/body -w "status=%{http_code}\n" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/collaborators/$u/permission"
+            cat /tmp/body; echo
+          done
