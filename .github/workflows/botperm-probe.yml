@@ -1,0 +1,35 @@
+name: botperm-probe
+on:
+  workflow_dispatch:
+
+jobs:
+  empty-perms:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Probe collaborator permission endpoint with zero-permission token
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for u in "github-actions%5Bbot%5D" "github-actions" "octocat" "Ety60"; do
+            echo "=== $u"
+            curl -s -o /tmp/body -w "status=%{http_code}\n" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/collaborators/$u/permission"
+            head -c 300 /tmp/body; echo
+          done
+
+  read-perms:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Probe collaborator permission endpoint with read token
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for u in "github-actions%5Bbot%5D" "github-actions" "octocat" "Ety60"; do
+            echo "=== $u"
+            curl -s -o /tmp/body -w "status=%{http_code}\n" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/collaborators/$u/permission"
+            head -c 300 /tmp/body; echo
+          done
