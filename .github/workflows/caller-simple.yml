@@ -1,0 +1,8 @@
+name: caller-simple
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  run:
+    uses: ./.github/workflows/callee-simple.yml
