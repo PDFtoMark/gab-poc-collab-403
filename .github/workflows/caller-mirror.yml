@@ -1,0 +1,17 @@
+name: caller-mirror
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+  copilot-requests: write
+  discussions: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  run:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+    uses: elastic/ai-github-actions/.github/workflows/gh-aw-mention-in-pr.lock.yml@v0
