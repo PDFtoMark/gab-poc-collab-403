@@ -1,0 +1,10 @@
+name: callee-simple
+on:
+  workflow_call:
+jobs:
+  c:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - run: echo CALLEE_SIMPLE_OK
