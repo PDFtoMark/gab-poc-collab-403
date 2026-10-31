@@ -1,0 +1,10 @@
+name: permtest-copilot
+on:
+  workflow_dispatch:
+permissions:
+  copilot-requests: write
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo COPILOT_PERM_OK
