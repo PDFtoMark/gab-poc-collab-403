@@ -1,0 +1,11 @@
+name: callee-idtoken
+on:
+  workflow_call:
+jobs:
+  c:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - run: echo CALLEE_OK
